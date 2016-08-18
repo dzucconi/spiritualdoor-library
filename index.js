@@ -51,8 +51,6 @@ const generate = voice => {
 
 getVoices()
   .then(({ voices }) => {
-    // voices.map(generate)
-    // return generate(voices[0]);
     return voices.reduce((promise, voice) => {
       return promise.then(() => generate(voice));
     }, Promise.resolve(true));
