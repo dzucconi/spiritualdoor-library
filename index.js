@@ -2,38 +2,61 @@ const fs = require('fs');
 const Ivona = require('ivona-node');
 const data = require('./data');
 
+const wait = ms =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
 const ivona = new Ivona({
   accessKey: process.env.IVONA_ACCESS_KEY,
   secretKey: process.env.IVONA_SECRET_KEY
 });
 
-const list = () =>
-  ivona.listVoices()
-    .on('complete', function(voices) {
-      console.log(voices);
+const getVoices = () =>
+  new Promise(resolve =>
+    ivona
+      .listVoices()
+      .on('complete', resolve)
+  );
+
+const speak = (text, voice) =>
+  new Promise(resolve => {
+    try {
+      fs.mkdirSync(`./output/${voice.Name}`);
+    } catch(e) {
+      // Ignore
+    }
+
+    ivona
+      .createVoice(text, {
+        body: { voice: voice }
+      })
+      .pipe(fs.createWriteStream(`./output/${voice.Name}/${text}.mp3`))
+      .on('finish', () => {
+        wait(250).then(resolve);
+      });
+
+  });
+
+const winds = data.map(({ wind }) => wind);
+
+const generate = voice => {
+  console.log('------');
+  console.log(`Generating ${voice.Name}`);
+  return winds.reduce((promise, wind) => {
+    return promise.then(() => {
+      console.log(`Speaking: "${wind}"`);
+      return speak(wind, voice).then(() => wait(25));
     });
-
-const voices = [
-  { Gender: 'Female', Language: 'it-IT', Name: 'Carla' },
-  { Gender: 'Male', Language: 'it-IT', Name: 'Giorgio' }
-];
-
-const speak = (text, voice) => {
-  try {
-    fs.mkdirSync(`./output/${voice.Name}`);
-  } catch(e) {
-    // Ignore
-  };
-
-  ivona
-    .createVoice(text, {
-      body: { voice: voice }
-    })
-    .pipe(fs.createWriteStream(`./output/${voice.Name}/${text}.mp3`));
+  }, Promise.resolve(true));
 };
 
-const points = data.map(x => x.traditional_wind_point);
-
-voices.map(voice =>
-  points.map(point => speak(point, voice))
-);
+getVoices()
+  .then(({ voices }) => {
+    // voices.map(generate)
+    // return generate(voices[0]);
+    return voices.reduce((promise, voice) => {
+      return promise.then(() => generate(voice));
+    }, Promise.resolve(true));
+  })
+  .then(() => {
+    console.log('Done.');
+  });
