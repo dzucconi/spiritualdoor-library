@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "nf run node index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "foreman": "^1.4.1",
     "ivona-node": "^0.4.0"
   }
 }

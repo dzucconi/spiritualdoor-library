@@ -13,18 +13,27 @@ const list = () =>
       console.log(voices);
     });
 
-const voices = {
-  female: { Gender: 'Female', Language: 'it-IT', Name: 'Carla' },
-  male: { Gender: 'Male', Language: 'it-IT', Name: 'Giorgio' }
-};
+const voices = [
+  { Gender: 'Female', Language: 'it-IT', Name: 'Carla' },
+  { Gender: 'Male', Language: 'it-IT', Name: 'Giorgio' }
+];
 
-const speak = (text, voice) =>
+const speak = (text, voice) => {
+  try {
+    fs.mkdirSync(`./output/${voice.Name}`);
+  } catch(e) {
+    // Ignore
+  };
+
   ivona
     .createVoice(text, {
       body: { voice: voice }
     })
-    .pipe(fs.createWriteStream(`./output/${voice.Gender}/${text}.mp3`));
+    .pipe(fs.createWriteStream(`./output/${voice.Name}/${text}.mp3`));
+};
 
 const points = data.map(x => x.traditional_wind_point);
 
-points.map(point => speak(point, voices.male));
+voices.map(voice =>
+  points.map(point => speak(point, voice))
+);
